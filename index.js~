@@ -117,7 +117,7 @@ tcp_tracker.on('session', function (session) {
   console.log("recv_bytes_tcp  " + session.recv_bytes_tcp);
   console.log("recv_bytes_payload  " + session.recv_bytes_payload);
   console.log("------------------------------------------------------");
-    io.emit('chat message',"src  " + session.src + <br> + "dst  " + session.dst);
+    io.emit('chat message',"src  " + session.src  + " dst  " + session.dst);
   session.on('end', function (session) {
       console.log("End of TCP session between " + session.src_name + " and " + session.dst_name);
       

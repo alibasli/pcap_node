@@ -123,7 +123,7 @@ tcp_tracker.on('session', function (session) {
       
   });
 });
-// Listen for packets, decode them, and feed the simple printer.  No tricks.
+// Listen for packets, decode them, and feed the simple printer.  No tricks..
 pcap_session.on("packet", function (raw_packet) {
     var packet = pcap.decode.packet(raw_packet);
    // var header = packet.pcap_header;
