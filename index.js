@@ -87,39 +87,40 @@ IPv4Addr.prototype.toString = function() {
     return dns_cache.ptr(this.origToString());
 };
 
-//decode packet
-tcp_tracker.on('session', function (session) {
-  console.log("Start of session between " + session.src_name + " and " + session.dst_name);
-  console.log("src  " + session.src);
-  console.log("dst  " + session.dst);
-  console.log("syn_time  " + session.syn_time);
-  console.log("state  " + session.state);
-  console.log("key  " + session.key);
-  console.log("send_isn  " + session.send_isn);
-  console.log("send_window_scale  " + session.send_window_scale);
-  console.log("send_packets  " + session.send_packets);
-  console.log("send_acks  " + session.send_acks);
-  console.log("send_retrans  " + session.send_retrans);
-  console.log("send_next_seq  " + session.send_next_seq);
-  console.log("send_acked_seq  " + session.send_acked_seq);
-  console.log("send_bytes_ip  " + session.send_bytes_ip);
-  console.log("send_bytes_tcp  " + session.send_bytes_tcp);
-  console.log("send_bytes_payload  " + session.send_bytes_payload);
 
-  console.log("recv_isn  " + session.recv_isn);
-  console.log("recv_window_scale  " + session.recv_window_scale);
-  console.log("recv_packets  " + session.recv_packets);
-  console.log("recv_acks  " + session.recv_acks);
-  console.log("recv_retrans  " + session.recv_retrans);
-  console.log("recv_next_seq  " + session.recv_next_seq);
-  console.log("recv_acked_seq  " + session.recv_acked_seq);
-  console.log("recv_bytes_ip  " + session.recv_bytes_ip);
-  console.log("recv_bytes_tcp  " + session.recv_bytes_tcp);
-  console.log("recv_bytes_payload  " + session.recv_bytes_payload);
-  console.log("------------------------------------------------------");
-    io.emit('chat message',"src  " + session.src  + " dst  " + session.dst);
+tcp_tracker.on('session', function (session) {
+	//bağlantı olduğunda bağlantıyı decode et
+  io.emit('chat message',"Start of session between " + session.src_name + " and " + session.dst_name);
+  io.emit('chat message',"  -src : " + session.src
+  + "  -dst:  " + session.dst
+  + "  -syn_time:  " + session.syn_time
+  + "  -state:  " + session.state
+  + " - key:  " + session.key
+  + "  -send_isn:  " + session.send_isn
+  + "  -send_window_scale:  " + session.send_window_scale
+  + "  -send_packets:  " + session.send_packets
+  + "  -send_acks:  " + session.send_acks
+  + "  -send_retrans:  " + session.send_retrans
+  + "  -send_next_seq:  " + session.send_next_seq
+  + "  -send_acked_seq:  " + session.send_acked_seq
+  + "  -send_bytes_ip:  " + session.send_bytes_ip
+  + "  -send_bytes_tcp:  " + session.send_bytes_tcp
+  + "  -send_bytes_payload:  " + session.send_bytes_payload
+
+  + " -recv_isn:  " + session.recv_isn
+  + " -recv_window_scale:  " + session.recv_window_scale
+  + " -recv_packets: " + session.recv_packets
+  + " -recv_acks:  " + session.recv_acks
+  + " -recv_retrans:  " + session.recv_retrans
+  + " -recv_next_seq:  " + session.recv_next_seq
+  + " -recv_acked_seq:  " + session.recv_acked_seq
+  + " -recv_bytes_ip:  " + session.recv_bytes_ip
+  + " -recv_bytes_tcp:  " + session.recv_bytes_tcp
+  + " -recv_bytes_payload  " + session.recv_bytes_payload);    
+    
   session.on('end', function (session) {
-      console.log("End of TCP session between " + session.src_name + " and " + session.dst_name);
+     // console.log("End of TCP session between " + session.src_name + " and " + session.dst_name);
+     io.emit('chat message',"End of TCP session between " + session.src_name + " and " + session.dst_name);
       
   });
 });
@@ -130,7 +131,7 @@ pcap_session.on("packet", function (raw_packet) {
       tcp_tracker.track_packet(packet);
    // var ret = header.tv_sec + "." + rpad(header.tv_usec, 6) + " " + rpad(header.len + "B", 5) + " ";
 
-    io.emit('chat message',packet.payload.toString());
+    io.emit('chat message',packet.payload.toString()); //tüm paketleri sockete yönlendir.
    // console.log(packet.payload.toString());
 });
 
@@ -143,7 +144,7 @@ io.on('connection', function(socket)
 
     socket.on('chat message', function(msg)
     {
-        io.emit('chat message', msg);
+        io.emit('chat message', msg); //paketleri index.html e gönder
     });
     socket.on('disconnect', function()
     {
