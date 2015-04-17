@@ -10,12 +10,10 @@ app.get('/', function(req, res){
 });
 
 http.listen(8001, function(){
-  console.log('listening on 127.0.01:8001');
+  console.log('listening on 127.0.0.1:8001');
 });
 /////////////////////////////////////
-//#!/usr/bin/env node
-
-var pcap = require("pcap"), pcap_session,tcp_tracker = new pcap.TCPTracker();
+var pcap = require("pcap"), pcap_session;//,tcp_tracker = new pcap.TCPTracker();
     
 if (process.argv.length > 4) {
     console.error("usage: simple_capture interface filter");
@@ -67,9 +65,6 @@ try {
     online();
 }
 
-// libpcap's internal version numnber
-//console.log(pcap.lib_version);
-
 function rpad(num, len) {
     var str = num.toString();
     while (str.length < len) {
@@ -87,64 +82,80 @@ IPv4Addr.prototype.toString = function() {
     return dns_cache.ptr(this.origToString());
 };
 
+/////--------mongo db connections----------------
 
-tcp_tracker.on('session', function (session) {
-	//bağlantı olduğunda bağlantıyı decode et
-  io.emit('chat message',"Start of session between " + session.src_name + " and " + session.dst_name);
-  io.emit('chat message',"  -src : " + session.src
-  + "  -dst:  " + session.dst
-  + "  -syn_time:  " + session.syn_time
-  + "  -state:  " + session.state
-  + " - key:  " + session.key
-  + "  -send_isn:  " + session.send_isn
-  + "  -send_window_scale:  " + session.send_window_scale
-  + "  -send_packets:  " + session.send_packets
-  + "  -send_acks:  " + session.send_acks
-  + "  -send_retrans:  " + session.send_retrans
-  + "  -send_next_seq:  " + session.send_next_seq
-  + "  -send_acked_seq:  " + session.send_acked_seq
-  + "  -send_bytes_ip:  " + session.send_bytes_ip
-  + "  -send_bytes_tcp:  " + session.send_bytes_tcp
-  + "  -send_bytes_payload:  " + session.send_bytes_payload
+var should = require("should"); //  It keeps your test code clean, and your error messages helpful.
+var monk = require("monk"); // a framework that makes accessing MongoDb really easy
 
-  + " -recv_isn:  " + session.recv_isn
-  + " -recv_window_scale:  " + session.recv_window_scale
-  + " -recv_packets: " + session.recv_packets
-  + " -recv_acks:  " + session.recv_acks
-  + " -recv_retrans:  " + session.recv_retrans
-  + " -recv_next_seq:  " + session.recv_next_seq
-  + " -recv_acked_seq:  " + session.recv_acked_seq
-  + " -recv_bytes_ip:  " + session.recv_bytes_ip
-  + " -recv_bytes_tcp:  " + session.recv_bytes_tcp
-  + " -recv_bytes_payload  " + session.recv_bytes_payload);    
-    
-  session.on('end', function (session) {
-     // console.log("End of TCP session between " + session.src_name + " and " + session.dst_name);
-     io.emit('chat message',"End of TCP session between " + session.src_name + " and " + session.dst_name);
-      
-  });
-});
+var db = monk('localhost/exampleDb');
+should.exists(db);
+var collection = db.get("test3");
+should.exists(collection);
+getOldMessage();
+
+//-------------get old packet-----------------------
+ 
+function getOldMessage(){	
+/*	collection.find({}, { limit : 100 },function(err, rows){
+        if (err)
+            console.log(err);
+        else{
+			for (var i = 0; i < rows.length; i++) {
+				io.emit('chat message',rows[i].saddr +" --> "+rows[i].daddr );
+			}
+		}
+    }); 
+   */ 
+}
 // Listen for packets, decode them, and feed the simple printer.  No tricks..
+var lotsOfDocs=[{'saddr':'.','daddr':'.','sayi':'0'}];
 pcap_session.on("packet", function (raw_packet) {
     var packet = pcap.decode.packet(raw_packet);
-   // var header = packet.pcap_header;
-      tcp_tracker.track_packet(packet);
+  //  var header = packet.pcap_header;
    // var ret = header.tv_sec + "." + rpad(header.tv_usec, 6) + " " + rpad(header.len + "B", 5) + " ";
+   // io.emit('chat message',packet.payload.toString()); //tüm paketleri sockete yönlendir.
 
-    io.emit('chat message',packet.payload.toString()); //tüm paketleri sockete yönlendir.
-   // console.log(packet.payload.toString());
+    if(packet.payload.payload){		
+		//lotsOfDocs.push(packet.payload.payload.saddr.toString());
+		ipControl(packet.payload.payload.saddr.toString(),packet.payload.payload.daddr.toString());
+		//lotsOfDocs.push({'saddr':packet.payload.payload.saddr.toString(),'daddr':packet.payload.payload.daddr.toString()});
+	  //  collection.insert(lotsOfDocs, {w:1}, function(err, result) {});	  	 
+	  //  io.emit('chat message',packet.payload.payload.saddr.toString() +"->"+ packet.payload.payload.daddr.toString());	
+	}
+   else {}
+   
 });
-
-
-//////////////////
-
+function ipControl(saddr,daddr){
+	for(var i=0;i<lotsOfDocs.length;i++) {
+		if(saddr==lotsOfDocs[i]['saddr']){
+			var sayi = lotsOfDocs[i]['sayi'];
+			sayi++;
+			if(sayi>10){
+				io.emit('chat message',saddr);
+			}			
+			lotsOfDocs[i]['sayi'] = sayi;
+			return;
+		}
+	}
+	lotsOfDocs.push({'saddr':saddr,'daddr':daddr,"sayi":"1"});	
+	return;
+}
+function timerJson() {	
+	for(var i=0;i<lotsOfDocs.length;i++) {
+		console.log("saddr:"+lotsOfDocs[i]['saddr']+"--sayi--"+lotsOfDocs[i]['sayi']);
+	}
+	lotsOfDocs=[{'saddr':'.','daddr':'.','sayi':'0'}];
+    timer = setTimeout(timerJson, 2000)
+}
+var timer = setTimeout(timerJson, 2000)
+//------------------send packet to html with socket---------------------------------------
 io.on('connection', function(socket)
 {
     console.log('Bir kullanıcı bağlandı');
 
     socket.on('chat message', function(msg)
     {
-        io.emit('chat message', msg); //paketleri index.html e gönder
+        io.emit('chat message', msg);
     });
     socket.on('disconnect', function()
     {
